@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<sys/wait.h>
+#include<unistd.h>
 #include "token.h"
 
 #define MAX_COMMAND_SIZE 512
@@ -41,25 +41,26 @@ void readInput(char *s, int limit) {
 /**
  * Compares two strings returns 0 is a == b, 1 if a is alphabetically first, and -1 if b is
  * alphabetically first
- * not captial sensitive
  * @param a         
  * @param b       
  */
 char compare(char *a, char *b) {
   for (int i = 0;;i++) {
-    char aTemp = a[i] <= 90 || a[i] >= 65 ? a + 32 : a;
-    char bTemp = b[i] <= 90 || b[i] >= 65 ? b + 32 : b;
+    char aTemp = (char) a[i];
+    char bTemp = (char) b[i];
+
+    // printf("\n%d %d", a[i], b[i]);
 
     // both strings terminate at the same time
-    if (atemp == '\0' && btemp== '\0') {
+    if (aTemp == '\0' && bTemp== '\0') {
       return 0;
-    } else if (atemp == '\0') { // a terminates first
+    } else if (aTemp == '\0') { // a terminates first
       return 1;
-    } else if (btemp == '\0') { // b terminates first
+    } else if (bTemp == '\0') { // b terminates first
       return -1;
-    } else if (atemp < btemp) {
+    } else if (aTemp < bTemp) {
       return 1;
-    } else if (btemp < atemp) {
+    } else if (bTemp < aTemp) {
       return -1;
     }
   }
@@ -78,16 +79,52 @@ void freeUpArry(char **arry) {
 
 char** getPath(char** envp) {
   for (int i=0; envp[i] != (char*)0; i++) {
-    char ** envElement = tokenize(envp[i], "=");
+    char ** envElement = tokenize(envp[i], '=');
 
-    if (compare("PATH\0",envElement[0]) == 0) {
-      char **pathTokens = tokenize(envElement[1], ":");
+    if (compare("PATH\0", envElement[0]) == 0) {
+      char **pathTokens = tokenize(envElement[1], ':');
 
       freeUpArry(envElement);
       return pathTokens;
     }
 
     freeUpArry(envElement);
+  }
+}
+
+int lengthStr(char *a) {
+  for (int i = 0;;i++) {
+    if (a[i] == 0 || a[i] == '\0') { 
+      return i;
+    }
+  }
+}
+
+char* concat(char *a, char *b) {
+  int sizeA = lengthStr(a);
+  int sizeB = lengthStr(b);
+
+  char *returnee = (char *)malloc(sizeof(char) * (sizeA + sizeB + 1 + 1)); // first + 1 for the '/' char and other + 1 for null terminator
+  int i;
+  for (i = 0; i < sizeA; i++) {
+    returnee[i] = a[i];
+  }
+
+  returnee[i] = '/';
+  i++;
+
+  for (int l = 0; l < sizeB; l++, i++) {
+    returnee[i] = b[l];
+  }
+
+  return returnee;
+}
+
+int countArry(char **a) {
+  for(int i = 0;;i++) {
+    if (a[i] == 0) {
+      return i;
+    }
   }
 }
 
@@ -118,14 +155,32 @@ int main(int argc, char** argv, char** envp) {
       continue;
     } else if (rc == 0) {
       // child
-      int returnVal = execve(cmd[0], &cmd[0], envp);
-      exit(0);
+      int returnVal = execve(countArry(tokensArry), tokensArry, envp);
+
+      for (int i = 0; returnVal != 0 && path[i] != (char *)0; i++) {
+        char * str = concat(path[i], tokensArry[0]);
+        returnVal = execve(str, tokensArry, envp);
+        free(str);
+      }
+
+      if (returnVal != 0) {
+        printf("\nCommand not found");
+      }
+
+      return 0;
     } else {
       // parent
-      int wc = wait(NULL);
+      int waitArg;
+      wait(&waitArg);
+      if (WEXITSTATUS(waitArg) != 0) {
+        printf("\nError Code: %d\n", WEXITSTATUS(waitArg));
+      }
+
     }
   }
 
-  free(p);
-  free(d);
+  free(shellInput);
+  freeUpArry(path);
+
+  return 0;
 }
