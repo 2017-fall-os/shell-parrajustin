@@ -6,6 +6,32 @@
 
 #define MAX_COMMAND_SIZE 512
 
+//                                                         
+//                                                         
+//                           tttt            iiii  lllllll 
+//                        ttt:::t           i::::i l:::::l 
+//                        t:::::t            iiii  l:::::l 
+//                        t:::::t                  l:::::l 
+//  uuuuuu    uuuuuuttttttt:::::ttttttt    iiiiiii  l::::l 
+//  u::::u    u::::ut:::::::::::::::::t    i:::::i  l::::l 
+//  u::::u    u::::ut:::::::::::::::::t     i::::i  l::::l 
+//  u::::u    u::::utttttt:::::::tttttt     i::::i  l::::l 
+//  u::::u    u::::u      t:::::t           i::::i  l::::l 
+//  u::::u    u::::u      t:::::t           i::::i  l::::l 
+//  u::::u    u::::u      t:::::t           i::::i  l::::l 
+//  u:::::uuuu:::::u      t:::::t    tttttt i::::i  l::::l 
+//  u:::::::::::::::uu    t::::::tttt:::::ti::::::il::::::l
+//   u:::::::::::::::u    tt::::::::::::::ti::::::il::::::l
+//    uu::::::::uu:::u      tt:::::::::::tti::::::il::::::l
+//      uuuuuuuu  uuuu        ttttttttttt  iiiiiiiillllllll
+//                                                         
+//                                                         
+//                                                         
+//                                                         
+//                                                         
+//                                                         
+//            
+
 /** Clears any chars still in the input buffer */
 void clearInputBuffer() {
   while ( getchar() != '\n' );
@@ -66,17 +92,6 @@ char compare(char *a, char *b) {
   }
 }
 
-void freeUpArry(char **arry) {
-  for (int i = 0;;i++) {
-    if (arry[i] == (char *)0) {
-      free(arry);
-      break;
-    }
-
-    free(arry[i]);
-  }
-}
-
 char** getPath(char** envp) {
   for (int i=0; envp[i] != (char*)0; i++) {
     char ** envElement = tokenize(envp[i], '=');
@@ -125,18 +140,113 @@ char* concat(char *a, char *b) {
   for (int l = 0; l < sizeB; l++, i++) {
     returnee[i] = b[l];
   }
+  returnee[i] = 0;
 
   return returnee;
 }
 
-int countArry(char **a) {
-  for(int i = 0;;i++) {
-    if (a[i] == 0) {
-      return i;
-    }
+int pathExecute(char **tokenizedCommand, char **envp, char **path) {
+  int returnVal = execve(tokenizedCommand[0], tokenizedCommand, envp);
+  
+  for (int i = 0; returnVal != 0 && path[i] != (char *)0; i++) {
+    char * str = concat(path[i], tokenizedCommand[0]);
+    returnVal = execve(str, tokenizedCommand, envp);
+    free(str);
   }
+
+  return returnVal;
 }
 
+void execute(char *command, char **envp, char **path) {
+  // check if there are pipes
+  char **pipeTokenized = tokenize(command, '|');
+  int numofPipes = countTokens(pipeTokenized);
+  if (contains(command, '|') == 1 && countTokenWords(command, '|') > 0) {
+    // there are pipes
+
+    int fd[2];
+    int copy_0 = dup(0);
+    int copy_1 = dup(1);
+    int i;
+    for (i = 0; i < numofPipes - 1; i++) {
+
+      pipe(fd);
+
+      pid_t pid = fork();
+      if (pid < 0) {
+        printf("pipe failed to start process");
+        return;
+      } else if (pid == 0) {
+        // child process closes up input side of pipe
+        // close(fd[1]); // child closing stdin
+        close(1);
+        dup(fd[1]);
+        close(fd[1]);
+        close(fd[0]);
+
+        execute(pipeTokenized[i], envp, path);
+      } else {
+        // parent, waits for command to end
+        int waitArg;
+        wait(&waitArg);
+        if (WEXITSTATUS(waitArg) != 0) {
+          printf("\nError Code: %d\n", WEXITSTATUS(waitArg));
+        }
+
+        close(0);
+        dup(fd[0]);
+        close(fd[0]);
+        close(fd[1]);
+      }
+    }
+
+    execute(pipeTokenized[i], envp, path);
+
+    dup2(copy_0, 0);
+    dup2(copy_1, 1);
+    freeUpArry(pipeTokenized);
+    return 0;
+  } else {
+    // there are no pipes
+    
+    freeUpArry(pipeTokenized); // free pipe token array
+    char **tokenizedCommand = tokenize(command, ' ');
+
+    int returnVal = pathExecute(tokenizedCommand, envp, path);
+  
+    if (returnVal != 0) {
+      printf("\nCommand not found");
+    }
+  
+    freeUpArry(tokenizedCommand);
+    return 0;
+  }
+}
+//                                                                     
+//                                                                     
+//                                              iiii                   
+//                                             i::::i                  
+//                                              iiii                   
+//                                                                     
+//     mmmmmmm    mmmmmmm     aaaaaaaaaaaaa   iiiiiiinnnn  nnnnnnnn    
+//   mm:::::::m  m:::::::mm   a::::::::::::a  i:::::in:::nn::::::::nn  
+//  m::::::::::mm::::::::::m  aaaaaaaaa:::::a  i::::in::::::::::::::nn 
+//  m::::::::::::::::::::::m           a::::a  i::::inn:::::::::::::::n
+//  m:::::mmm::::::mmm:::::m    aaaaaaa:::::a  i::::i  n:::::nnnn:::::n
+//  m::::m   m::::m   m::::m  aa::::::::::::a  i::::i  n::::n    n::::n
+//  m::::m   m::::m   m::::m a::::aaaa::::::a  i::::i  n::::n    n::::n
+//  m::::m   m::::m   m::::ma::::a    a:::::a  i::::i  n::::n    n::::n
+//  m::::m   m::::m   m::::ma::::a    a:::::a i::::::i n::::n    n::::n
+//  m::::m   m::::m   m::::ma:::::aaaa::::::a i::::::i n::::n    n::::n
+//  m::::m   m::::m   m::::m a::::::::::aa:::ai::::::i n::::n    n::::n
+//  mmmmmm   mmmmmm   mmmmmm  aaaaaaaaaa  aaaaiiiiiiii nnnnnn    nnnnnn
+//                                                                     
+//                                                                     
+//                                                                     
+//                                                                     
+//                                                                     
+//                                                                     
+//                                                                     
 int main(int argc, char** argv, char** envp) {
   printf("Justin Parra: Shell lab\n\n"); 
 
@@ -155,51 +265,47 @@ int main(int argc, char** argv, char** envp) {
     } else if (shellInput[0] == '\0') { // command empty go around
       continue;
     }
-    
-    // lets first check if there is a background task
-    int containsBackground = contains(shellInput, '&');
-    if (containsBackground) {
 
-    }
+    char **backgroundTokenized = tokenize(shellInput, '&');
+    int numberOfBackgroundTasks = countTokens(backgroundTokenized);
+    if (contains(shellInput, '&') == 1) {
+      // we have background tasks
+      for (int i = numberOfBackgroundTasks -1; i >= 0; i--) {
+        int rc = fork();
+        if (rc < 0) {
+          printf("\nProcess could not be created!"); 
+          freeUpArry(backgroundTokenized);
+          break;
+        } else if (rc == 0) {
+          execute(backgroundTokenized[i], envp, path);
+          exit(0);
+        }
+      }
 
-    // PIPES
-
-
-    // NORMAL
-
-    // tokenize command
-    char **tokensArry = tokenize(shellInput, ' ');
-
-    // begin running it
-    int rc = fork();
-    if (rc < 0) {
-      printf("\nProcess could not be created!"); 
-      freeUpArry(tokensArry);
+      freeUpArry(backgroundTokenized);
       continue;
-    } else if (rc == 0) {
-      // child
-      int returnVal = execve(countArry(tokensArry), tokensArry, envp);
-
-      for (int i = 0; returnVal != 0 && path[i] != (char *)0; i++) {
-        char * str = concat(path[i], tokensArry[0]);
-        returnVal = execve(str, tokensArry, envp);
-        free(str);
-      }
-
-      if (returnVal != 0) {
-        printf("\nCommand not found");
-      }
-
-      return 0;
     } else {
-      // parent
-      int waitArg;
-      wait(&waitArg);
-      if (WEXITSTATUS(waitArg) != 0) {
-        printf("\nError Code: %d\n", WEXITSTATUS(waitArg));
+      // no background tasks
+      freeUpArry(backgroundTokenized);
+      
+      // begin running it
+      int rc = fork();
+      if (rc < 0) {
+        printf("\nProcess could not be created!"); 
+        continue;
+      } else if (rc == 0) {
+        execute(shellInput, envp, path);
+        return 0;
+      } else {
+        // parent, waits for command to end
+        int waitArg;
+        wait(&waitArg);
+        if (WEXITSTATUS(waitArg) != 0) {
+          printf("\nError Code: %d\n", WEXITSTATUS(waitArg));
+        }
       }
-
     }
+
   }
 
   free(shellInput);

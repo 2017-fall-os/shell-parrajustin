@@ -63,3 +63,54 @@ char ** tokenize(char *str, char delim) {
   return tokensArry;
 }
 
+/** instead of just counting the number of tokens in an arry this actually counts seperated words **/
+int countTokenWords(char *str, char delim) {
+  // The length of the pointer array that contains each individual elment plus the null terminator
+  int pointerArryLen = 0;
+  // Specifies if the current element is being check, this is to stop a case where two or more delim chars are next to each other
+  // ex: the delimiter is '0'
+  // input: 0hello00world0test0    output -> hello,world,test instead of ,hello,,world,test,
+  bool foundToken = false;
+  
+  // first lets count the number of tokens
+  for (int i = 0; ; i++) {
+    if (str[i] == '\0') { // if null terminator found exit
+      if (foundToken) { // if it is hello\nworld\0 <- world should be counted
+        pointerArryLen += 1;
+      }
+      break;
+    }
+
+    if (!foundToken && str[i] != delim) {
+      foundToken = true;
+    } else if (foundToken && str[i] == delim) {
+      pointerArryLen += 1;
+      foundToken = false;
+    }
+  }
+
+  return pointerArryLen;
+}
+
+/** counts the number of tokens in an array **/
+int countTokens(char **tokenArry) {
+  for (int i = 0;;i++) {
+    if (tokenArry[i] == (char *)0) {
+      return i;
+    }
+  }
+}
+
+
+
+/** frees up all memory associated with a token arry **/
+void freeUpArry(char **arry) {
+  for (int i = 0;;i++) {
+    if (arry[i] == (char *)0) {
+      free(arry);
+      break;
+    }
+
+    free(arry[i]);
+  }
+}
