@@ -100,6 +100,15 @@ int lengthStr(char *a) {
   }
 }
 
+int contains(char *a, char token) {
+  for (int i = 0; a[i] != '\0';i++) {
+    if (a[i] == token) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 char* concat(char *a, char *b) {
   int sizeA = lengthStr(a);
   int sizeB = lengthStr(b);
@@ -136,18 +145,32 @@ int main(int argc, char** argv, char** envp) {
   
   while (1) {
     
+    // read input command
     printf("\n$ ");
     readInput(shellInput, MAX_COMMAND_SIZE);
 
+    // check if exit
     if (compare(shellInput, "exit\0") == 0) { // exit command specified
       break;
     } else if (shellInput[0] == '\0') { // command empty go around
       continue;
     }
+    
+    // lets first check if there is a background task
+    int containsBackground = contains(shellInput, '&');
+    if (containsBackground) {
+
+    }
+
+    // PIPES
+
+
+    // NORMAL
 
     // tokenize command
     char **tokensArry = tokenize(shellInput, ' ');
 
+    // begin running it
     int rc = fork();
     if (rc < 0) {
       printf("\nProcess could not be created!"); 

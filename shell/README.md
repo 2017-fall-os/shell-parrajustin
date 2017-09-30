@@ -1,6 +1,4 @@
 shell to run you can either use
- do
-
 
 
 ```
