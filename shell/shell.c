@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<sys/wait.h>
 #include<unistd.h>
+#include <fcntl.h>
 #include "token.h"
 
 #define MAX_COMMAND_SIZE 512
@@ -185,6 +186,7 @@ void execute(char *command, char **envp, char **path) {
         close(fd[0]);
 
         execute(pipeTokenized[i], envp, path);
+        exit(0);
       } else {
         // parent, waits for command to end
         int waitArg;
@@ -208,18 +210,73 @@ void execute(char *command, char **envp, char **path) {
     return 0;
   } else {
     // there are no pipes
-    
-    freeUpArry(pipeTokenized); // free pipe token array
-    char **tokenizedCommand = tokenize(command, ' ');
 
-    int returnVal = pathExecute(tokenizedCommand, envp, path);
+    // now lets check if there are '>' or '<'
+    if (contains(command, '<') || contains(command , '>')) {
+      if (contains(command, '<')) {
+        char **tokenizedInput = tokenize(command, '<');
+
+        int copy_0 = dup(0);
+        int copy_1 = dup(1);
+        // if there is an input redirect
+        pid_t pid = fork();
+        if (pid < 0) {
+          printf("input redirect failed to start process");
+          return;
+        } else if (pid == 0) {
+          char **removeSpaces = tokenize(tokenizedInput[1], ' ');
+          int fd = open(removeSpaces[0], O_RDONLY);
+
+          if (fd < 0) {
+            printf("\nFailed to open file: %s", tokenizedInput[1]);
+            freeUpArry(tokenizedInput[1]);
+            exit(0);
+          }
+          // close(1);
+          // close(0); //entry 0 on FDT is now free
+          // dup(fd); //fd duplicate is now stored at entry 0 
+
+          // dup(fd);
+          // close(fd);
+          int d = dup2(fd, 0); // make file go to input
+          // dup2(fd, 1);   // make stdout go to file
+          // dup2(fd, 2);   // make stderr go to file - you may choose to not do this
+          //                // or perhaps send stderr to another file
+      
+          close(fd);     // fd no longer needed - the dup'ed handles are sufficient
   
-    if (returnVal != 0) {
-      printf("\nCommand not found");
+          execute(tokenizedInput[0], envp, path);
+          exit(0);
+        } else {
+          // parent, waits for command to end
+          int waitArg;
+          wait(&waitArg);
+          if (WEXITSTATUS(waitArg) != 0) {
+            printf("\nError Code: %d\n", WEXITSTATUS(waitArg));
+          }
+        }
+        
+        dup2(copy_0, 0);
+        dup2(copy_1, 1);
+        freeUpArry(tokenizedInput);
+      }
+
+    } else {
+      freeUpArry(pipeTokenized); // free pipe token array
+      char **tokenizedCommand = tokenize(command, ' ');
+  
+      int returnVal = pathExecute(tokenizedCommand, envp, path);
+      
+            printf("\n%s", tokenizedCommand[0]);
+            exit(0);
+    
+      if (returnVal != 0) {
+        printf("\nCommand not found");
+      }
+    
+      freeUpArry(tokenizedCommand);
+      return 0;
     }
-  
-    freeUpArry(tokenizedCommand);
-    return 0;
   }
 }
 //                                                                     
