@@ -3,8 +3,10 @@ all: toc
 CFLAGS = -g -O2
 
 toc: shell.o token.o
-	cc -o test shell.o token.o
+	cc -o myShell shell.o token.o
 clean:
-	rm -f  *.o test test.exe
+	rm -f  *.o myShell myShell.exe
 run: toc
-	./test
+	./myShell
+test: toc
+	./testShell.sh ./myShell
