@@ -14,8 +14,11 @@ rm -f testLog.txt
 
 chkcmd () {
     echo "Testing $2" 
-    echo -e "$1" | bash > /tmp/t1
-    echo -e "$1" | $myShell > /tmp/t2
+    echo "$1"
+    echo "$1" | bash > /tmp/t1
+    # echo "$1" | bash > "./tmp/$2.a"
+    echo "$1" | $myShell > /tmp/t2
+    # echo "$1" | $myShell > "./tmp/$2.b"
     if diff /tmp/t1 /tmp/t2 ; then
 	result=PASSED
     else
@@ -42,6 +45,5 @@ echo -e "\n\nResults"
 cat testLog.txt
 
 rm /tmp/c1 /tmp/t1 /tmp/t2
-
 
 

@@ -204,6 +204,7 @@ int pathExecute(char **tokenizedCommand, char **envp, char **path) {
 }
 
 void execute(char *command, char **envp, char **path) {
+
   // check if there are pipes
   char **pipeTokenized = tokenize(command, '|');
   int numofPipes = countTokens(pipeTokenized);
@@ -361,11 +362,23 @@ int main(int argc, char** argv, char** envp) {
       continue;
     }
 
+    char **dir = tokenize(shellInput, ' ');
+    if (compare(dir[0], "cd\0") == 0) {
+      char *dest = "./test";
+      int ret = chdir(dir[1]);
+      if(ret != 0) {
+        printf("\n Couldn't change dir");
+      }
+      freeUpArry(dir);
+      continue;
+    }
+    freeUpArry(dir);
+
     char **backgroundTokenized = tokenize(shellInput, '&');
     int numberOfBackgroundTasks = countTokens(backgroundTokenized);
     if (contains(shellInput, '&') == 1) {
       // we have background tasks
-      for (int i = 0; i < numberOfBackgroundTasks; i--) {
+      for (int i = 0; i < numberOfBackgroundTasks; i++) {
         int rc = fork();
         if (rc < 0) {
           printf("\nProcess could not be created!"); 
