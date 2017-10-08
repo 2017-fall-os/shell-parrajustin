@@ -7,7 +7,10 @@
   - under exe comment exists code to execute the commands like pipes and redirecting inputs
   - under main comment is the main function
 
-## note: still can't get ps1 thing to work
+## my tests now show that it works with the test script
+
+- problem
+  - I didn't do redirect output
 
 ```
 make 
@@ -18,6 +21,12 @@ or
 
 ```
 make run
+```
+
+To test
+
+```
+make test
 ```
 
 piping help was found on http://tldp.org/LDP/lpg/node11.html
