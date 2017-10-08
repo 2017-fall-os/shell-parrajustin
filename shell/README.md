@@ -1,5 +1,7 @@
 # Parra Justin Shell
 
+Objective: make a shell similiar to that of bash, implement several commands such as pipes, redirecting outputs and inputs
+
 - token library I created in token.c
 - Shell main code in shell.c
   - I have comments for util, exe, and main
@@ -12,6 +14,11 @@
 - problem
   - I didn't do redirect output
 
+
+# Running
+
+If the variable PS1 is empty than the shell will prompt $ for user input after which you may type in your command and push enter to send it. To exit the shell simply type "exit" and the shell with exit
+
 ```
 make 
 ./myShell
@@ -23,7 +30,9 @@ or
 make run
 ```
 
-To test
+# Test
+
+To test just run
 
 ```
 make test
