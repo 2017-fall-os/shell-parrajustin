@@ -41,3 +41,8 @@ make test
 piping help was found on http://tldp.org/LDP/lpg/node11.html
 redirecting input / output found on https://stackoverflow.com/questions/2605130/redirecting-exec-output-to-a-buffer-or-file
 opening file help found on https://www.tutorialspoint.com/cprogramming/c_file_io.htm
+
+# documentation 
+I believe I fixed the problems with the test script and output but I'm not too sure. I feel like sometimes it works and sometimes it doesn't. https://github.com/2017-fall-os/shell-parrajustin
+
+I also couldn't get redirect output to work so that just prints out something like "for grad students"
